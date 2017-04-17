@@ -1,0 +1,10 @@
+{
+  "name": "sample",
+  "version": "1.0.0",
+  "description": "sample application to send message to Azure IoT hub via MQTT protocol",
+  "main": "main.js",
+  "dependencies": {
+    "azure-iot-device": "^1.1.9",
+    "azure-iot-device-mqtt": "^1.1.9"
+  }
+}
