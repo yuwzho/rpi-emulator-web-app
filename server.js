@@ -15,7 +15,7 @@ function setupCredential(uid, connstr) {
   credentials.push({
     uid: uid,
     connstr: connstr,
-    path: 'sample'
+    path: 'sample/main.js'
   });
 }
 
@@ -84,7 +84,8 @@ wss.on('connection', function connection(ws) {
     ws.close();
   }
 
-  sample = new SampleRunner([connstrObj.connstr], ws);
+  console.log(process.cwd());
+  sample = new SampleRunner(connstrObj.path, [connstrObj.connstr], ws);
   sample.run();
 });
 

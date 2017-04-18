@@ -1,38 +1,34 @@
 const fork = require('child_process').fork;
 const execSync = require('child_process').execSync;
 
-function Runner(params, ws) {
+function Runner(samplePath, params, ws) {
+    this.samplePath = samplePath;
     this.ws = ws;
     this.params = params;
 }
 
-Runner.prototype.run = function() {
-    params = this.params;
-    ws = this.ws;
-    process.chdir('sample');
-
-    execSync('npm install');
-    ps = fork('main.js', params, {
+Runner.prototype.run = function () {
+    this.ws.send(execSync('npm install'));
+    this.ps = fork(this.samplePath, this.params, {
         stdio: ['pipe', 'pipe', 'pipe', 'ipc']
     });
-    ws.on('message', (message) => {
+    this.ws.on('message', function (message) {
         console.log('receive ' + message);
-        ps.stdin.write(message + '\n');
-    });
+        this.ps.stdin.write(message + '\n');
+    }.bind(this));
 
-    ps.stdout.on('data', (data) => {
-        console.log('MESSAGE: ' + data.toString());
-        ws.send('MESSAGE: ' + data.toString());
-    });
+    this.ps.stdout.on('data', function (data) {
+        console.log(data.toString().trim());
+        this.ws.send(data.toString().trim());
+    }.bind(this));
 
-    ps.stderr.on('data', (data) => {
-        console.log('ERROR: ' + data.toString());
-        ws.send('ERROR: ' + data.toString());
-    });
-    this.ps = ps;
+    this.ps.stderr.on('data', function (data) {
+        console.log('ERROR: ' + data.toString().trim());
+        this.ws.send('ERROR: ' + data.toString().trim());
+    }.bind(this));
 }
 
-Runner.prototype.dispose = function() {
+Runner.prototype.dispose = function () {
     this.ps.kill('SIGINT');
 }
 
