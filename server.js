@@ -1,12 +1,48 @@
+const bodyParser = require('body-parser');
 const express = require('express');
 const http = require('http');
 const WebSocket = require('ws');
 const path = require('path');
+const Uuid = require('uuid-lib');
+const url = require('url');
 
 const app = express();
 const SampleRunner = require('./src/runner.js');
 
+/* ====================== Helpers ========================= */
+var credentials = [];
+function setupCredential(uid, connstr) {
+  credentials.push({
+    uid: uid,
+    connstr: connstr,
+    path: 'sample'
+  });
+}
+
+function getCredential(uid) {
+  for (var i = 0; i < credentials.length; i++) {
+    if (credentials[i].uid === uid) {
+      var obj = credentials[i];
+      credentials.splice(i, 1);
+      return obj;
+    }
+  }
+  return {};
+}
+
 /* ======================= Route ========================= */
+app.use(bodyParser.json());
+app.post('/api/setup', function (req, res) {
+  var connstr = req.body.connstr;
+  var uid = Uuid.raw();
+  var result = setupCredential(uid, connstr);
+  if (result) {
+    res.status(400).send(JSON.stringify({ error: result }));
+  } else {
+    res.send(JSON.stringify({ uid: uid }));
+  }
+});
+
 app.use(express.static(path.join(__dirname, 'public')));
 
 app.use(function (req, res/*, next*/) {
@@ -25,13 +61,30 @@ const wss = new WebSocket.Server({ server });
 wss.on('connection', function connection(ws) {
   var sample;
   ws.on('close', function onClose() {
-    if(sample) {
+    if (sample) {
       sample.dispose();
     }
     console.log('disconnected');
   });
 
-  sample = new SampleRunner([''], ws);
+  var queries = url.parse(ws.upgradeReq.url, true).query;
+  if (!queries) {
+    ws.send('no connection string found');
+    ws.close();
+  }
+  var uid = queries.uid;
+  if (!uid) {
+    ws.send('no connection string found');
+    ws.close();
+  }
+
+  var connstrObj = getCredential(uid);
+  if (!connstrObj || !(connstrObj.connstr)) {
+    ws.send('no connection string found');
+    ws.close();
+  }
+
+  sample = new SampleRunner([connstrObj.connstr], ws);
   sample.run();
 });
 
