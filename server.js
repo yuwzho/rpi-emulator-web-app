@@ -85,8 +85,16 @@ wss.on('connection', function connection(ws) {
   }
 
   console.log(process.cwd());
-  sample = new SampleRunner(connstrObj.path, [connstrObj.connstr], ws);
-  sample.run();
+  try {
+    sample = new SampleRunner(connstrObj.path, [connstrObj.connstr], ws);
+    sample.run();
+  }
+  catch (err) {
+    console.error(err);
+    ws.send('ERROR:\n');
+    ws.send(err);
+    ws.close();
+  }
 });
 
 /**

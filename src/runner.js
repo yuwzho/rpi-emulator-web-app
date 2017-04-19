@@ -8,7 +8,7 @@ function Runner(samplePath, params, ws) {
 }
 
 Runner.prototype.run = function () {
-    this.ws.send(execSync('npm install'));
+    execSync('npm install');
     this.ps = fork(this.samplePath, this.params, {
         stdio: ['pipe', 'pipe', 'pipe', 'ipc']
     });
